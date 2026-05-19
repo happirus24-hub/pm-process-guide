@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>링크 관리자 — PM 프로세스 가이드</title>
+  <style>
+    :root {
+      --kakao-yellow: #FEE500;
+      --kakao-brown: #3C1E1E;
+      --primary: #1A1A2E;
+      --blue: #2D6BE4;
+      --bg: #F7F8FC;
+      --card: #FFFFFF;
+      --border: #E5E9F2;
+      --text: #1A1A2E;
+      --text-muted: #7B8899;
+      --success: #27AE60;
+      --danger: #E8365D;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+    header {
+      background: var(--kakao-brown);
+      padding: 0 32px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 56px;
+    }
+    .logo { font-size: 16px; font-weight: 800; color: var(--kakao-yellow); }
+    .back-link {
+      font-size: 13px; color: rgba(254,229,0,0.7); text-decoration: none;
+    }
+    .back-link:hover { color: var(--kakao-yellow); }
+
+    .page { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* ── Auth ── */
+    .auth-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 36px; max-width: 520px; margin: 0 auto;
+    }
+    .auth-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .auth-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+    .input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .pat-input {
+      flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 14px; outline: none; font-family: monospace;
+    }
+    .pat-input:focus { border-color: var(--blue); }
+    .btn {
+      padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; border: none; transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--kakao-yellow); color: var(--kakao-brown); }
+    .btn-save { background: var(--blue); color: #fff; padding: 12px 32px; font-size: 15px; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    details { margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+    summary { cursor: pointer; font-weight: 600; color: var(--blue); }
+    details ol { margin: 10px 0 0 18px; line-height: 2; }
+
+    /* ── Status bar ── */
+    .status-bar {
+      padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      margin-bottom: 20px; display: none;
+    }
+    .status-bar.success { background: #D1FAE5; color: #065F46; display: block; }
+    .status-bar.error   { background: #FEE2E2; color: #991B1B; display: block; }
+    .status-bar.loading { background: #EFF6FF; color: #1E40AF; display: block; }
+
+    /* ── Top action bar ── */
+    .action-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px; gap: 16px;
+    }
+    .page-title { font-size: 22px; font-weight: 800; }
+    .action-right { display: flex; gap: 8px; align-items: center; }
+    .btn-token { font-size: 12px; padding: 7px 14px; border-radius: 8px; background: var(--border); color: var(--text-muted); border: none; cursor: pointer; }
+    .btn-token:hover { background: #D0D7E8; }
+
+    /* ── Phase section ── */
+    .phase-section { margin-bottom: 28px; }
+    .phase-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 10px 10px 0 0;
+      font-size: 15px; font-weight: 800;
+    }
+    .phase-body { border: 1px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; overflow: hidden; }
+
+    /* ── Link row ── */
+    .link-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      background: var(--card); transition: background 0.12s;
+    }
+    .link-row:last-child { border-bottom: none; }
+    .link-row:hover { background: #FAFBFF; }
+    .task-label {
+      width: 220px; flex-shrink: 0; font-size: 13px; font-weight: 600;
+      color: var(--text); line-height: 1.4;
+    }
+    .link-input {
+      flex: 1; padding: 7px 12px; border: 1px solid var(--border);
+      border-radius: 7px; font-size: 13px; outline: none; color: var(--text);
+      background: #F7F8FC;
+    }
+    .link-input:focus { border-color: var(--blue); background: #fff; }
+    .link-input.has-link { border-color: #93C5FD; background: #EFF6FF; }
+    .clear-btn {
+      width: 28px; height: 28px; border-radius: 6px; border: none;
+      background: none; cursor: pointer; color: var(--text-muted); font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .clear-btn:hover { background: #FEE2E2; color: var(--danger); }
+
+    /* ── Bottom save bar ── */
+    .save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      padding: 14px 32px; display: flex; align-items: center;
+      justify-content: flex-end; gap: 12px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.07); z-index: 50;
+    }
+    .save-note { font-size: 12px; color: var(--text-muted); }
+    .change-count {
+      font-size: 13px; font-weight: 700; color: var(--blue);
+      background: #EFF6FF; padding: 4px 12px; border-radius: 99px;
+    }
+    .change-count.hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">링크 관리자</div>
+    <a class="back-link" href="index.html">← 메인으로 돌아가기</a>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- Auth -->
+  <div id="authSection">
+    <div class="auth-card">
+      <div class="auth-title">GitHub 연결</div>
+      <div class="auth-desc">
+        링크를 저장하려면 GitHub Personal Access Token이 필요합니다.<br>
+        토큰은 이 기기의 세션에만 임시 저장되며, 외부로 전송되지 않습니다.
+      </div>
+      <div class="input-row">
+        <input type="password" class="pat-input" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxx" />
+        <button class="btn btn-primary" onclick="connectGitHub()">연결</button>
+      </div>
+      <div id="authError" style="font-size:13px;color:var(--danger);display:none;margin-top:8px;"></div>
+      <details>
+        <summary>토큰 발급 방법</summary>
+        <ol>
+          <li>GitHub → 우측 상단 프로필 → <strong>Settings</strong></li>
+          <li>왼쪽 메뉴 맨 아래 → <strong>Developer settings</strong></li>
+          <li><strong>Personal access tokens → Tokens (classic)</strong></li>
+          <li><strong>Generate new token (classic)</strong> 클릭</li>
+          <li>Note: <code>PM Guide Admin</code> / Scope: <strong>public_repo</strong> 체크</li>
+          <li>Generate token → 복사하여 위에 붙여넣기</li>
+        </ol>
+      </details>
+    </div>
+  </div>
+
+  <!-- Main content (after auth) -->
+  <div id="mainContent" style="display:none">
+    <div class="action-bar">
+      <div class="page-title">업무별 링크 관리</div>
+      <div class="action-right">
+        <span class="change-count hidden" id="changeCount">0개 변경</span>
+        <button class="btn-token" onclick="resetToken()">토큰 재설정</button>
+      </div>
+    </div>
+
+    <div id="statusBar" class="status-bar"></div>
+
+    <div id="linksForm"></div>
+  </div>
+
+</div>
+
+<!-- Save bar (after auth) -->
+<div class="save-bar" id="saveBar" style="display:none">
+  <span class="save-note">저장하면 GitHub에 반영되며, 약 1분 후 메인 페이지에 적용됩니다.</span>
+  <button class="btn btn-save" onclick="saveLinks()" id="saveBtn">저장하기</button>
+</div>
+
+<script>
+const REPO  = 'happirus24-hub/pm-process-guide';
+const FILE  = 'links.json';
+const API   = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
+
+let pat = sessionStorage.getItem('pm_guide_pat') || '';
+let currentSha = null;
+let originalLinks = {};
+
+// ── 단계별 업무 목록 ────────────────────────────────────────────
+const adminPhases = [
+  { title: '공통', icon: '🔍', tasks: [
+    '내부 정보 검색'
+  ]},
+  { title: '상위기획', icon: '📋', tasks: [
+    '벤치마킹 / 시장조사', 'Product Brief 작성', '서비스 상위기획 검토', '목표(KPI) 설정',
+    '계약서 검토 및 체결', '부수업무 신고 검토', '보안관리약정서 체결', '개인정보 처리방침 반영'
+  ]},
+  { title: '정책 정의 및 설계', icon: '📐', tasks: [
+    '정책(요구사항) 정의', '오픈스펙 정의', '상세기획 (와이어프레임)', '프로토타입 제작'
+  ]},
+  { title: '실행 준비', icon: '📅', tasks: [
+    '일정 산정 및 리소스 세팅'
+  ]},
+  { title: '리스크 검토 및 승인', icon: '🛡️', tasks: [
+    '서비스 출시/개선/종료 등록', '카카오페이 전체 서비스 현황 등록',
+    '내부통제 리스트 검토', '자금세탁방지(AML) 및 위험평가', '각종 법률 리스크',
+    '개인신용정보 관련 리스크', '민원 및 금융소비자보호', '고객응대 교육, 스크립트, QnA',
+    '데이터 수집 및 관리', '보안성 심의', '전사 업무지원시스템 운영', '전사 KPI 여부 검토',
+    '정산 필요 여부에 따른 재무 처리', '정산대행 API 연동 및 ERP gateway 협의',
+    '디자인 시스템 적용', '서비스 보안 검수', '전자금융사기위험 및 관리방안',
+    '서비스 AU/TRX 정의 및 검토', '프로그램 개발 로직의 적정성', '챗봇 연동 사항',
+    '(필요시) 머니 2.0 관련 이슈 검토', '(필요시) 이해상충행위 방지 알고리즘 관리',
+    '(공유 전용) 대외협력/PR/채널서비스',
+    '서비스 검토 (법무팀)', '서비스 검토 (개인정보)', '서비스 flow 검토',
+    '약관 제/개정 검토', '동의서 제/개정 검토', '검토협의체 검토/설명회'
+  ]},
+  { title: '실행 및 개발', icon: '⚙️', tasks: [
+    '과제 등록 (Jira)', '약관(동의서) 어드민 등록', '브랜딩(네이밍) 검토',
+    'UX 라이팅 검수', '아바타 배너 인벤토리 생성 요청', '인프라 요청',
+    '프로덕트 디자인 (UX)', '티아라 태깅', 'FE/BE 개발'
+  ]},
+  { title: '관리 및 운영준비', icon: '🗂️', tasks: [
+    '진입점 검토 및 대응', '정보성 메시지 검토', '정보성 메시지 등록 및 검수',
+    '광고성 메시지 검수', '광고성 메시지 검토 및 승인', '광고성 메시지 등록', '아바타 배너 세팅'
+  ]},
+  { title: '최종 검수 및 출시 준비', icon: '✅', tasks: [
+    'Pre QA (PM 직접)', '티아라 태깅 검수', 'QA TC 검토', 'QA 진행',
+    'KMS 등록', 'FAQ 등록', 'CS봇 등록', 'PR 논의',
+    '서비스 출시 완료 표시', '서비스 출시 전자결재 상신',
+    '(분석/식별) ETL 요청', '분리보관 검토 및 정책 정의'
+  ]},
+  { title: '출시 후', icon: '🚀', tasks: [
+    '전사 공유 콘텐츠', '정보성 메시지 발송', '광고성 메시지 발송',
+    '지표 모니터링', '성능 측정', '장애 발생 대응',
+    'CS 대응', 'KMS / FAQ 현행화', 'KPI 달성도 측정', '효율 측정',
+    '운영 도구 관리', '공지사항 관리', '문서 현행화', '회고'
+  ]},
+  { title: '점검활동', icon: '🔒', tasks: [
+    '개인정보 흐름도 작성 및 검수', '개인정보 파기 시행 점검'
+  ]}
+];
+
+// ── GitHub API ──────────────────────────────────────────────────
+async function connectGitHub() {
+  const input = document.getElementById('patInput').value.trim();
+  if (!input) return;
+  pat = input;
+  setStatus('loading', 'GitHub에서 링크 데이터를 불러오는 중...');
+  const ok = await fetchLinks();
+  if (ok) {
+    sessionStorage.setItem('pm_guide_pat', pat);
+    document.getElementById('authSection').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('saveBar').style.display = 'flex';
+    clearStatus();
+  } else {
+    pat = '';
+  }
+}
+
+async function fetchLinks() {
+  try {
+    const res = await fetch(API, { headers: { 'Authorization': `token ${pat}`, 'Accept': 'application/vnd.github.v3+json' } });
+    if (res.status === 401) {
+      showAuthError('토큰이 올바르지 않습니다. 다시 확인해주세요.');
+      return false;
+    }
+    let links = {};
+    if (res.ok) {
+      const data = await res.json();
+      currentSha = data.sha;
+      const bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), c => c.charCodeAt(0));
+      links = JSON.parse(new TextDecoder().decode(bytes));
+    } else {
+      currentSha = null;
+    }
+    originalLinks = JSON.parse(JSON.stringify(links));
+    renderForm(links);
+    return true;
+  } catch(e) {
+    showAuthError('네트워크 오류가 발생했습니다: ' + e.message);
+    return false;
+  }
+}
+
+async function saveLinks() {
+  const links = collectLinks();
+  const jsonStr = JSON.stringify(links, null, 2);
+  const bytes = new TextEncoder().encode(jsonStr);
+  const binStr = Array.from(bytes, b => String.fromCharCode(b)).join('');
+  const content = btoa(binStr);
+
+  const body = { message: '링크 업데이트 (관리자)', content };
+  if (currentSha) body.sha = currentSha;
+
+  setStatus('loading', '저장 중...');
+  document.getElementById('saveBtn').disabled = true;
+
+  try {
+    const res = await fetch(API, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${pat}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify(body)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      currentSha = data.content.sha;
+      originalLinks = JSON.parse(JSON.stringify(links));
+      updateChangeCount();
+      setStatus('success', '✓ 저장되었습니다. 약 1분 후 메인 페이지에 반영됩니다.');
+    } else {
+      const err = await res.json();
+      setStatus('error', '저장 실패: ' + (err.message || res.status));
+    }
+  } catch(e) {
+    setStatus('error', '네트워크 오류: ' + e.message);
+  }
+  document.getElementById('saveBtn').disabled = false;
+}
+
+// ── Form ────────────────────────────────────────────────────────
+function renderForm(links) {
+  const container = document.getElementById('linksForm');
+  let html = '';
+  adminPhases.forEach(phase => {
+    html += `<div class="phase-section">
+      <div class="phase-header">${phase.icon} ${phase.title}</div>
+      <div class="phase-body">`;
+    phase.tasks.forEach(task => {
+      const url = links[task] || '';
+      const hasLink = url ? 'has-link' : '';
+      html += `<div class="link-row">
+        <div class="task-label">${task}</div>
+        <input type="url" class="link-input ${hasLink}" data-task="${task.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}"
+          value="${url.replace(/"/g,'&quot;')}" placeholder="https://..."
+          oninput="onLinkInput(this)" />
+        <button class="clear-btn" title="링크 삭제" onclick="clearLink(this)">✕</button>
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+  updateChangeCount();
+}
+
+function collectLinks() {
+  const links = {};
+  document.querySelectorAll('.link-input').forEach(input => {
+    const task = input.getAttribute('data-task');
+    const url = input.value.trim();
+    if (url) links[task] = url;
+  });
+  return links;
+}
+
+function onLinkInput(input) {
+  input.classList.toggle('has-link', !!input.value.trim());
+  updateChangeCount();
+}
+
+function clearLink(btn) {
+  const input = btn.previousElementSibling;
+  input.value = '';
+  input.classList.remove('has-link');
+  updateChangeCount();
+}
+
+function updateChangeCount() {
+  const current = collectLinks();
+  let changed = 0;
+  const allTasks = adminPhases.flatMap(p => p.tasks);
+  allTasks.forEach(task => {
+    if ((current[task] || '') !== (originalLinks[task] || '')) changed++;
+  });
+  const el = document.getElementById('changeCount');
+  if (changed > 0) {
+    el.textContent = `${changed}개 변경됨`;
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+// ── Helpers ─────────────────────────────────────────────────────
+function setStatus(type, msg) {
+  const el = document.getElementById('statusBar');
+  el.className = 'status-bar ' + type;
+  el.textContent = msg;
+}
+function clearStatus() {
+  document.getElementById('statusBar').className = 'status-bar';
+}
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function resetToken() {
+  sessionStorage.removeItem('pm_guide_pat');
+  location.reload();
+}
+
+// ── Auto-login if token in session ──────────────────────────────
+if (pat) {
+  document.getElementById('patInput').value = pat;
+  connectGitHub();
+}
+</script>
+</body>
+</html>
