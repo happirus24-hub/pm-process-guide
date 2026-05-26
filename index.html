@@ -583,6 +583,112 @@
       color: var(--text-muted);
     }
 
+    /* Project Bar */
+    .project-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+    }
+    .project-bar-row {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 48px;
+    }
+    .project-bar-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .project-select {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      background: var(--bg);
+      cursor: pointer;
+      max-width: 280px;
+    }
+    .project-select:focus { outline: 2px solid var(--kakao-yellow); }
+    .project-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-muted);
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .project-icon-btn:hover { background: var(--border); }
+    .project-icon-btn.danger:hover { background: #FDEEF2; color: var(--required); border-color: #f5c6d0; }
+    .project-new-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .project-new-btn:hover { background: var(--kakao-yellow); border-color: var(--accent); }
+    .project-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    .project-inline-form {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .project-inline-form.visible { display: flex; }
+    .project-inline-input {
+      padding: 5px 10px;
+      border: 1.5px solid var(--accent);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      background: #fff;
+      width: 240px;
+    }
+    .project-inline-input:focus { outline: none; }
+    .project-confirm-btn {
+      padding: 5px 14px;
+      border-radius: 8px;
+      border: none;
+      background: var(--kakao-yellow);
+      color: var(--kakao-brown);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .project-cancel-btn {
+      padding: 5px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: none;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
     @media (max-width: 900px) {
       .page { grid-template-columns: 1fr; }
       aside { display: none; }
@@ -603,6 +709,25 @@
     </div>
   </div>
 </header>
+
+<!-- Project Bar -->
+<div class="project-bar">
+  <div class="project-bar-row" id="projectBarMain">
+    <span class="project-bar-label">📁 프로젝트</span>
+    <select class="project-select" id="projectSelect" onchange="switchProject(this.value)"></select>
+    <button class="project-icon-btn" onclick="startProjectForm('rename')" title="프로젝트 이름 변경">✏️</button>
+    <div class="project-divider"></div>
+    <button class="project-new-btn" onclick="startProjectForm('create')">＋ 새 프로젝트</button>
+    <button class="project-icon-btn danger" onclick="deleteCurrentProject()" title="현재 프로젝트 삭제" style="margin-left:auto;">🗑️</button>
+  </div>
+  <div class="project-bar-row project-inline-form" id="projectForm">
+    <span class="project-bar-label" id="projectFormLabel"></span>
+    <input type="text" class="project-inline-input" id="projectFormInput" placeholder="예: 결제 서비스 개편"
+           onkeydown="if(event.key==='Enter')confirmProjectForm(); if(event.key==='Escape')cancelProjectForm();" />
+    <button class="project-confirm-btn" onclick="confirmProjectForm()">확인</button>
+    <button class="project-cancel-btn" onclick="cancelProjectForm()">취소</button>
+  </div>
+</div>
 
 <div class="page">
   <!-- Sidebar -->
@@ -1912,25 +2037,127 @@ async function loadLinks() {
   } catch(e) {}
 }
 
-// ─── PHASE PROGRESS ─────────────────────────────────────────────
-let phaseStates = {};
+// ─── PROJECTS ────────────────────────────────────────────────────
+let projects = [];
+let currentProjectId = null;
+let projectFormMode = null; // 'create' | 'rename'
 
-function initPhaseProgress() {
+function genId() {
+  return 'proj-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+}
+
+function loadProjects() {
   try {
-    const saved = localStorage.getItem('phaseProgressStates');
-    if (saved) phaseStates = JSON.parse(saved);
+    const saved = localStorage.getItem('pmProjects');
+    if (saved) projects = JSON.parse(saved);
   } catch(e) {}
+
+  if (projects.length === 0) {
+    // 기존 단일 진행 데이터 마이그레이션
+    let oldStates = {};
+    try {
+      const old = localStorage.getItem('phaseProgressStates');
+      if (old) oldStates = JSON.parse(old);
+    } catch(e) {}
+    projects.push({ id: genId(), name: '기본 프로젝트', phaseStates: oldStates });
+  }
+
+  try { currentProjectId = localStorage.getItem('pmCurrentProjectId'); } catch(e) {}
+  if (!projects.find(p => p.id === currentProjectId)) currentProjectId = projects[0].id;
+
+  saveProjects();
+}
+
+function saveProjects() {
+  try {
+    localStorage.setItem('pmProjects', JSON.stringify(projects));
+    localStorage.setItem('pmCurrentProjectId', currentProjectId);
+  } catch(e) {}
+}
+
+function getCurrentProject() {
+  return projects.find(p => p.id === currentProjectId) || projects[0];
+}
+
+function renderProjectBar() {
+  const sel = document.getElementById('projectSelect');
+  sel.innerHTML = projects.map(p =>
+    `<option value="${p.id}"${p.id === currentProjectId ? ' selected' : ''}>${p.name}</option>`
+  ).join('');
+}
+
+function switchProject(id) {
+  currentProjectId = id;
+  saveProjects();
+  renderProjectBar();
+  renderPhaseProgress();
+}
+
+function startProjectForm(mode) {
+  projectFormMode = mode;
+  const label = mode === 'create' ? '새 프로젝트 이름' : '이름 변경';
+  const value = mode === 'rename' ? getCurrentProject().name : '';
+  document.getElementById('projectFormLabel').textContent = label;
+  document.getElementById('projectFormInput').value = value;
+  document.getElementById('projectBarMain').style.display = 'none';
+  document.getElementById('projectForm').classList.add('visible');
+  const input = document.getElementById('projectFormInput');
+  input.focus();
+  if (mode === 'rename') input.select();
+}
+
+function confirmProjectForm() {
+  const name = document.getElementById('projectFormInput').value.trim();
+  if (!name) return;
+  if (projectFormMode === 'create') {
+    const proj = { id: genId(), name, phaseStates: {} };
+    projects.push(proj);
+    currentProjectId = proj.id;
+  } else {
+    const proj = getCurrentProject();
+    if (proj) proj.name = name;
+  }
+  saveProjects();
+  cancelProjectForm();
+  renderProjectBar();
+  renderPhaseProgress();
+}
+
+function cancelProjectForm() {
+  document.getElementById('projectBarMain').style.display = '';
+  document.getElementById('projectForm').classList.remove('visible');
+  projectFormMode = null;
+}
+
+function deleteCurrentProject() {
+  if (projects.length <= 1) { alert('마지막 프로젝트는 삭제할 수 없습니다.'); return; }
+  const proj = getCurrentProject();
+  if (!confirm(`"${proj.name}" 프로젝트를 삭제하시겠습니까?\n진행 데이터가 모두 사라집니다.`)) return;
+  projects = projects.filter(p => p.id !== currentProjectId);
+  currentProjectId = projects[0].id;
+  saveProjects();
+  renderProjectBar();
+  renderPhaseProgress();
+}
+
+// ─── PHASE PROGRESS ─────────────────────────────────────────────
+function initPhaseProgress() {
+  loadProjects();
+  renderProjectBar();
   renderPhaseProgress();
 }
 
 function renderPhaseProgress() {
+  const proj = getCurrentProject();
+  const states = proj ? proj.phaseStates : {};
+
   const container = document.getElementById('phaseSteps');
-  const completedCount = phases.filter(p => phaseStates[p.id] === 'done').length;
-  const currentIdx = phases.findIndex(p => phaseStates[p.id] !== 'done');
+  const completedCount = phases.filter(p => states[p.id] === 'done').length;
+  const currentIdx = phases.findIndex(p => states[p.id] !== 'done');
 
   let html = '';
   phases.forEach((phase, idx) => {
-    const isDone = phaseStates[phase.id] === 'done';
+    const isDone = states[phase.id] === 'done';
     const isCurrent = idx === currentIdx;
     const isLocked = !isDone && !isCurrent;
     const cls = isDone ? 'completed' : (isCurrent ? 'current' : 'locked');
@@ -1952,25 +2179,27 @@ function renderPhaseProgress() {
 }
 
 function togglePhaseComplete(phaseId) {
+  const proj = getCurrentProject();
+  if (!proj) return;
   const idx = phases.findIndex(p => p.id === phaseId);
-  const allPreviousDone = phases.slice(0, idx).every(p => phaseStates[p.id] === 'done');
+  const allPreviousDone = phases.slice(0, idx).every(p => proj.phaseStates[p.id] === 'done');
+  if (!allPreviousDone) return;
 
-  if (!allPreviousDone) return; // 이전 단계 미완료 시 무시
-
-  if (phaseStates[phaseId] === 'done') {
-    // 완료 해제 시 이후 단계도 함께 해제
-    delete phaseStates[phaseId];
-    phases.slice(idx + 1).forEach(p => delete phaseStates[p.id]);
+  if (proj.phaseStates[phaseId] === 'done') {
+    delete proj.phaseStates[phaseId];
+    phases.slice(idx + 1).forEach(p => delete proj.phaseStates[p.id]);
   } else {
-    phaseStates[phaseId] = 'done';
+    proj.phaseStates[phaseId] = 'done';
   }
-  try { localStorage.setItem('phaseProgressStates', JSON.stringify(phaseStates)); } catch(e) {}
+  saveProjects();
   renderPhaseProgress();
 }
 
 function resetPhaseProgress() {
-  phaseStates = {};
-  try { localStorage.removeItem('phaseProgressStates'); } catch(e) {}
+  const proj = getCurrentProject();
+  if (!proj) return;
+  proj.phaseStates = {};
+  saveProjects();
   renderPhaseProgress();
 }
 
