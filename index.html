@@ -475,6 +475,9 @@
       transition: opacity 0.15s;
     }
     .phase-step-item:hover { opacity: 0.75; }
+    .phase-step-item.locked { cursor: not-allowed; opacity: 0.4; }
+    .phase-step-item.locked:hover { opacity: 0.4; }
+    .phase-step-item.locked .phase-step-circle { background: var(--bg); border-color: var(--border); color: var(--border); }
     .phase-step-circle {
       width: 34px;
       height: 34px;
@@ -1929,9 +1932,11 @@ function renderPhaseProgress() {
   phases.forEach((phase, idx) => {
     const isDone = phaseStates[phase.id] === 'done';
     const isCurrent = idx === currentIdx;
-    const cls = isDone ? 'completed' : (isCurrent ? 'current' : '');
+    const isLocked = !isDone && !isCurrent;
+    const cls = isDone ? 'completed' : (isCurrent ? 'current' : 'locked');
     const circleContent = isDone ? '✓' : (idx + 1);
-    html += `<div class="phase-step-item ${cls}" onclick="togglePhaseComplete('${phase.id}')" title="${phase.title} 단계 완료 체크">
+    const titleAttr = isLocked ? `${phase.title} (이전 단계 완료 후 체크 가능)` : `${phase.title} 단계 완료 체크`;
+    html += `<div class="phase-step-item ${cls}" onclick="togglePhaseComplete('${phase.id}')" title="${titleAttr}">
       <div class="phase-step-circle">${circleContent}</div>
       <div class="phase-step-label">${phase.icon} ${phase.title}</div>
     </div>`;
@@ -1947,8 +1952,15 @@ function renderPhaseProgress() {
 }
 
 function togglePhaseComplete(phaseId) {
+  const idx = phases.findIndex(p => p.id === phaseId);
+  const allPreviousDone = phases.slice(0, idx).every(p => phaseStates[p.id] === 'done');
+
+  if (!allPreviousDone) return; // 이전 단계 미완료 시 무시
+
   if (phaseStates[phaseId] === 'done') {
+    // 완료 해제 시 이후 단계도 함께 해제
     delete phaseStates[phaseId];
+    phases.slice(idx + 1).forEach(p => delete phaseStates[p.id]);
   } else {
     phaseStates[phaseId] = 'done';
   }
