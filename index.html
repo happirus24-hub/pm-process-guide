@@ -433,6 +433,111 @@
       transition: width 0.3s;
     }
 
+    /* Phase Progress Stepper */
+    .phase-progress-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px 20px;
+      margin-bottom: 28px;
+    }
+    .phase-progress-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .phase-progress-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .phase-progress-pct {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: auto;
+      font-weight: 600;
+    }
+    .phase-steps-row {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .phase-step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 76px;
+      flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.15s;
+    }
+    .phase-step-item:hover { opacity: 0.75; }
+    .phase-step-circle {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+      transition: all 0.2s;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .phase-step-item.completed .phase-step-circle {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+      font-size: 16px;
+    }
+    .phase-step-item.current .phase-step-circle {
+      background: var(--kakao-yellow);
+      border-color: var(--accent);
+      color: var(--kakao-brown);
+      box-shadow: 0 0 0 3px rgba(245,166,35,0.25);
+    }
+    .phase-step-label {
+      font-size: 10px;
+      text-align: center;
+      color: var(--text-muted);
+      line-height: 1.35;
+      word-break: keep-all;
+    }
+    .phase-step-item.completed .phase-step-label { color: var(--success); font-weight: 600; }
+    .phase-step-item.current .phase-step-label { color: var(--kakao-brown); font-weight: 700; }
+    .step-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin-top: 15px;
+      min-width: 6px;
+      align-self: flex-start;
+      transition: background 0.25s;
+    }
+    .step-connector.completed { background: var(--success); }
+    .phase-overall-bar {
+      margin-top: 14px;
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .phase-overall-fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 99px;
+      transition: width 0.35s;
+    }
+
     /* E2E flow */
     .flow-steps { display: flex; flex-direction: column; gap: 0; }
     .flow-step {
@@ -564,6 +669,19 @@
         <div class="summary-card">
           <div class="summary-num blue" id="stat-orgs">—</div>
           <div class="summary-label">협업 조직 수</div>
+        </div>
+      </div>
+
+      <!-- Phase Progress Stepper -->
+      <div class="phase-progress-wrap">
+        <div class="phase-progress-header">
+          <span class="phase-progress-title">📍 단계별 진행 현황</span>
+          <span class="phase-progress-pct" id="phaseProgressPct">0 / 10 완료</span>
+          <button onclick="resetPhaseProgress()" style="font-size:12px;color:var(--text-muted);background:none;border:none;cursor:pointer;margin-left:8px;">초기화</button>
+        </div>
+        <div class="phase-steps-row" id="phaseSteps"></div>
+        <div class="phase-overall-bar">
+          <div class="phase-overall-fill" id="phaseOverallFill" style="width:0%"></div>
         </div>
       </div>
 
@@ -1791,9 +1909,63 @@ async function loadLinks() {
   } catch(e) {}
 }
 
+// ─── PHASE PROGRESS ─────────────────────────────────────────────
+let phaseStates = {};
+
+function initPhaseProgress() {
+  try {
+    const saved = localStorage.getItem('phaseProgressStates');
+    if (saved) phaseStates = JSON.parse(saved);
+  } catch(e) {}
+  renderPhaseProgress();
+}
+
+function renderPhaseProgress() {
+  const container = document.getElementById('phaseSteps');
+  const completedCount = phases.filter(p => phaseStates[p.id] === 'done').length;
+  const currentIdx = phases.findIndex(p => phaseStates[p.id] !== 'done');
+
+  let html = '';
+  phases.forEach((phase, idx) => {
+    const isDone = phaseStates[phase.id] === 'done';
+    const isCurrent = idx === currentIdx;
+    const cls = isDone ? 'completed' : (isCurrent ? 'current' : '');
+    const circleContent = isDone ? '✓' : (idx + 1);
+    html += `<div class="phase-step-item ${cls}" onclick="togglePhaseComplete('${phase.id}')" title="${phase.title} 단계 완료 체크">
+      <div class="phase-step-circle">${circleContent}</div>
+      <div class="phase-step-label">${phase.icon} ${phase.title}</div>
+    </div>`;
+    if (idx < phases.length - 1) {
+      html += `<div class="step-connector ${isDone ? 'completed' : ''}"></div>`;
+    }
+  });
+
+  container.innerHTML = html;
+  document.getElementById('phaseProgressPct').textContent = `${completedCount} / ${phases.length} 완료`;
+  const pct = phases.length ? (completedCount / phases.length) * 100 : 0;
+  document.getElementById('phaseOverallFill').style.width = pct + '%';
+}
+
+function togglePhaseComplete(phaseId) {
+  if (phaseStates[phaseId] === 'done') {
+    delete phaseStates[phaseId];
+  } else {
+    phaseStates[phaseId] = 'done';
+  }
+  try { localStorage.setItem('phaseProgressStates', JSON.stringify(phaseStates)); } catch(e) {}
+  renderPhaseProgress();
+}
+
+function resetPhaseProgress() {
+  phaseStates = {};
+  try { localStorage.removeItem('phaseProgressStates'); } catch(e) {}
+  renderPhaseProgress();
+}
+
 // ─── INIT ────────────────────────────────────────────────────────
 renderProcess();
 renderChecklist();
+initPhaseProgress();
 loadLinks();
 </script>
 </body>
