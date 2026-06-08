@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>카카오페이 PM 프로젝트 현황</title>
+  <style>
+    :root {
+      --kakao-yellow: #FEE500;
+      --kakao-brown: #3C1E1E;
+      --primary: #1A1A2E;
+      --accent: #F5A623;
+      --required: #E8365D;
+      --success: #27AE60;
+      --blue: #2D6BE4;
+      --bg: #F7F8FC;
+      --card: #FFFFFF;
+      --border: #E5E9F2;
+      --text: #1A1A2E;
+      --text-muted: #7B8899;
+      --tag-bg: #EEF2FF;
+      --tag-color: #4459A1;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--kakao-yellow);
+      padding: 0 32px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+      gap: 16px;
+    }
+    .logo {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--kakao-brown);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-badge {
+      background: var(--kakao-brown);
+      color: var(--kakao-yellow);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 99px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .nav-link {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--kakao-brown);
+      text-decoration: none;
+      transition: background 0.15s;
+      background: rgba(60,30,30,0.08);
+      border: none;
+      cursor: pointer;
+    }
+    .nav-link:hover { background: rgba(60,30,30,0.16); }
+    .nav-link.active { background: var(--kakao-brown); color: var(--kakao-yellow); }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    /* ── Page Title ── */
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .page-title { font-size: 24px; font-weight: 800; }
+    .page-subtitle { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+    /* ── Summary Cards ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .summary-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .summary-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #C5CBDC; }
+    .summary-card.active-filter { border-color: var(--accent); background: #FFFBF0; box-shadow: 0 0 0 2px rgba(245,166,35,0.2); }
+    .summary-num {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .summary-num.all { color: #1A1A2E; }
+    .summary-num.in-progress { color: var(--blue); }
+    .summary-num.completed { color: var(--success); }
+    .summary-num.planning { color: var(--accent); }
+    .summary-num.paused { color: var(--text-muted); }
+    .summary-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: flex-end;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 160px;
+      flex: 1;
+    }
+    .filter-group.narrow { min-width: 120px; max-width: 180px; }
+    .filter-group.wide { min-width: 200px; max-width: 280px; }
+    .filter-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .filter-select, .filter-input {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+      cursor: pointer;
+    }
+    .filter-select:focus, .filter-input:focus {
+      outline: 2px solid var(--kakao-yellow);
+      border-color: var(--accent);
+    }
+    .filter-input { background: #fff; cursor: text; }
+    .my-projects-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+    .my-projects-btn:hover { background: #FFF3CD; border-color: var(--accent); color: #7D4A00; }
+    .my-projects-btn.active { background: var(--kakao-yellow); border-color: var(--accent); color: var(--kakao-brown); font-weight: 700; }
+    .filter-reset-btn {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: none;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      align-self: flex-end;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .filter-reset-btn:hover { background: var(--border); color: var(--text); }
+
+    /* ── My PM Label ── */
+    .my-pm-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .my-pm-label { font-size: 13px; color: var(--text-muted); }
+    .my-pm-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--kakao-yellow);
+      color: var(--kakao-brown);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .my-pm-input {
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      width: 120px;
+    }
+    .my-pm-input:focus { outline: 2px solid var(--kakao-yellow); }
+    .my-pm-save-btn {
+      padding: 4px 12px;
+      border-radius: 6px;
+      border: none;
+      background: var(--kakao-yellow);
+      color: var(--kakao-brown);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── Table / Card toggle ── */
+    .view-toggle {
+      display: flex;
+      gap: 4px;
+    }
+    .view-btn {
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: none;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .view-btn.active { background: var(--kakao-brown); color: #fff; border-color: var(--kakao-brown); }
+
+    /* ── Results info ── */
+    .results-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .results-count { font-weight: 600; color: var(--text); }
+
+    /* ── Table View ── */
+    .table-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .project-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .project-table th {
+      background: #F0F2F8;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+    .project-table th:hover { background: #E8EBFF; }
+    .project-table th .sort-icon { margin-left: 4px; opacity: 0.4; }
+    .project-table th.sorted .sort-icon { opacity: 1; }
+    .project-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .project-table tr:last-child td { border-bottom: none; }
+    .project-table tr:hover td { background: #FAFBFF; }
+    .project-table tr.my-project td { background: #FFFDF0; }
+    .project-table tr.my-project:hover td { background: #FFF8D6; }
+
+    .project-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .my-star {
+      color: var(--accent);
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .project-name-text {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+    .status-badge.in-progress { background: #EBF3FF; color: var(--blue); }
+    .status-badge.completed { background: #E8F5E9; color: var(--success); }
+    .status-badge.planning { background: #FFF8E1; color: #B06000; }
+    .status-badge.paused { background: #F5F5F5; color: #888; }
+
+    .org-tag {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      background: #FFF3E0;
+      color: #BF360C;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .pm-tag {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .pm-tag.mine { font-weight: 700; color: var(--kakao-brown); }
+
+    .date-cell { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+    .date-cell.overdue { color: var(--required); font-weight: 600; }
+
+    .progress-mini {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .progress-mini-bar {
+      flex: 1;
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .progress-mini-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--success);
+    }
+    .progress-mini-fill.in-progress { background: var(--blue); }
+    .progress-mini-fill.planning { background: var(--accent); }
+    .progress-pct { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ── Card View ── */
+    #cardView { display: none; }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .project-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .project-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.09); border-color: #C5CBDC; }
+    .project-card.my-project { border-left: 3px solid var(--accent); }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .card-name {
+      font-size: 15px;
+      font-weight: 700;
+      flex: 1;
+    }
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .card-dates {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      gap: 12px;
+    }
+    .card-date-item { display: flex; flex-direction: column; gap: 2px; }
+    .card-date-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .card-date-val { font-weight: 600; font-size: 13px; color: var(--text); }
+    .card-progress { margin-top: 12px; }
+    .card-progress-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .card-progress-bar {
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .card-progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--success);
+    }
+    .card-progress-fill.in-progress { background: var(--blue); }
+    .card-progress-fill.planning { background: var(--accent); }
+
+    /* ── Add/Edit Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px 32px;
+      width: 560px;
+      max-width: 96vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+    }
+    .form-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .form-label .req { color: var(--required); }
+    .form-input, .form-select, .form-textarea {
+      padding: 8px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .form-textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .btn-cancel {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: none;
+      font-size: 14px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .btn-save {
+      padding: 9px 24px;
+      border-radius: 8px;
+      border: none;
+      background: var(--kakao-yellow);
+      color: var(--kakao-brown);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-delete {
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: 1px solid #f5c6d0;
+      background: #FDEEF2;
+      color: var(--required);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: auto;
+    }
+
+    /* ── Add Button ── */
+    .add-project-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      background: var(--kakao-brown);
+      color: var(--kakao-yellow);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .add-project-btn:hover { opacity: 0.85; }
+
+    /* ── No results ── */
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .summary-grid { grid-template-columns: repeat(3, 1fr); }
+      .filter-group.wide { min-width: 140px; }
+    }
+    @media (max-width: 600px) {
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .container { padding: 16px 12px 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      카카오페이 PM 프로젝트 현황
+      <span class="logo-badge">INTERNAL</span>
+    </div>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link">📋 프로세스 가이드</a>
+      <a href="dashboard.html" class="nav-link active">📊 프로젝트 현황</a>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <div class="page-title">프로젝트 현황 대시보드</div>
+      <div class="page-subtitle">카카오페이에서 진행 중이거나 완료된 전체 프로젝트를 한눈에 확인합니다.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="view-toggle">
+        <button class="view-btn active" id="btnTableView" onclick="setView('table')">표 보기</button>
+        <button class="view-btn" id="btnCardView" onclick="setView('card')">카드 보기</button>
+      </div>
+      <button class="add-project-btn" onclick="openAddModal()">＋ 프로젝트 추가</button>
+    </div>
+  </div>
+
+  <!-- My PM Setting -->
+  <div class="my-pm-row">
+    <span class="my-pm-label">내 이름 설정:</span>
+    <input type="text" class="my-pm-input" id="myPmInput" placeholder="예: 양현아" />
+    <button class="my-pm-save-btn" onclick="saveMyPm()">저장</button>
+    <span id="myPmDisplay" style="display:none">
+      <span class="my-pm-badge" id="myPmBadge"></span>
+      <button onclick="editMyPm()" style="font-size:12px;color:var(--text-muted);background:none;border:none;cursor:pointer;margin-left:4px;">변경</button>
+    </span>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card" id="card-all" onclick="filterByStatus('all')">
+      <div class="summary-num all" id="stat-all">0</div>
+      <div class="summary-label">전체 프로젝트</div>
+    </div>
+    <div class="summary-card" id="card-in-progress" onclick="filterByStatus('in-progress')">
+      <div class="summary-num in-progress" id="stat-in-progress">0</div>
+      <div class="summary-label">진행 중</div>
+    </div>
+    <div class="summary-card" id="card-planning" onclick="filterByStatus('planning')">
+      <div class="summary-num planning" id="stat-planning">0</div>
+      <div class="summary-label">기획 중</div>
+    </div>
+    <div class="summary-card" id="card-completed" onclick="filterByStatus('completed')">
+      <div class="summary-num completed" id="stat-completed">0</div>
+      <div class="summary-label">완료</div>
+    </div>
+    <div class="summary-card" id="card-paused" onclick="filterByStatus('paused')">
+      <div class="summary-num paused" id="stat-paused">0</div>
+      <div class="summary-label">보류</div>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group wide">
+      <div class="filter-label">프로젝트 검색</div>
+      <input type="text" class="filter-input" id="filterSearch" placeholder="프로젝트명 검색..." oninput="applyFilters()" />
+    </div>
+    <div class="filter-group narrow">
+      <div class="filter-label">상태</div>
+      <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+        <option value="all">전체</option>
+        <option value="in-progress">진행 중</option>
+        <option value="planning">기획 중</option>
+        <option value="completed">완료</option>
+        <option value="paused">보류</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">조직</div>
+      <select class="filter-select" id="filterOrg" onchange="applyFilters()">
+        <option value="all">전체 조직</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">메인 PM</div>
+      <select class="filter-select" id="filterPm" onchange="applyFilters()">
+        <option value="all">전체 PM</option>
+      </select>
+    </div>
+    <div class="filter-group narrow">
+      <div class="filter-label">연도</div>
+      <select class="filter-select" id="filterYear" onchange="applyFilters()">
+        <option value="all">전체</option>
+      </select>
+    </div>
+    <button class="my-projects-btn" id="myProjectsBtn" onclick="toggleMyProjects()">
+      ★ 내 프로젝트
+    </button>
+    <button class="filter-reset-btn" onclick="resetFilters()">필터 초기화</button>
+  </div>
+
+  <!-- Results Bar -->
+  <div class="results-bar">
+    <span><span class="results-count" id="resultsCount">0</span>개 프로젝트</span>
+    <span id="activeFilterLabel" style="color:var(--text-muted);font-size:12px;"></span>
+  </div>
+
+  <!-- Table View -->
+  <div id="tableView">
+    <div class="table-wrap">
+      <table class="project-table" id="projectTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">프로젝트명 <span class="sort-icon" id="sort-name">↕</span></th>
+            <th onclick="sortTable('status')">상태 <span class="sort-icon" id="sort-status">↕</span></th>
+            <th onclick="sortTable('org')">조직 <span class="sort-icon" id="sort-org">↕</span></th>
+            <th onclick="sortTable('pm')">메인 PM <span class="sort-icon" id="sort-pm">↕</span></th>
+            <th onclick="sortTable('startDate')">시작일 <span class="sort-icon" id="sort-startDate">↕</span></th>
+            <th onclick="sortTable('endDate')">완료 예정일 <span class="sort-icon" id="sort-endDate">↕</span></th>
+            <th>진행률</th>
+            <th>비고</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="projectTableBody"></tbody>
+      </table>
+      <div class="no-results" id="tableNoResults" style="display:none;">조건에 맞는 프로젝트가 없습니다.</div>
+    </div>
+  </div>
+
+  <!-- Card View -->
+  <div id="cardView">
+    <div class="card-grid" id="cardGrid"></div>
+    <div class="no-results" id="cardNoResults" style="display:none;">조건에 맞는 프로젝트가 없습니다.</div>
+  </div>
+
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">프로젝트 추가</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <div class="form-label">프로젝트명 <span class="req">*</span></div>
+        <input type="text" class="form-input" id="formName" placeholder="예: 결제 서비스 개편" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">상태 <span class="req">*</span></div>
+        <select class="form-select" id="formStatus">
+          <option value="in-progress">진행 중</option>
+          <option value="planning">기획 중</option>
+          <option value="completed">완료</option>
+          <option value="paused">보류</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">조직명 <span class="req">*</span></div>
+        <input type="text" class="form-input" id="formOrg" placeholder="예: 결제서비스팀" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">메인 PM <span class="req">*</span></div>
+        <input type="text" class="form-input" id="formPm" placeholder="예: 양현아" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">시작일</div>
+        <input type="date" class="form-input" id="formStartDate" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">완료 예정일</div>
+        <input type="date" class="form-input" id="formEndDate" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">진행률 (%)</div>
+        <input type="number" class="form-input" id="formProgress" placeholder="0~100" min="0" max="100" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <div class="form-label">비고</div>
+        <input type="text" class="form-input" id="formNote" placeholder="간단한 메모" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="btnDelete" onclick="deleteProject()" style="display:none;">삭제</button>
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveProject()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Default sample data ──
+  const SAMPLE_PROJECTS = [
+    {
+      id: 1, name: '결제 서비스 고도화', status: 'in-progress',
+      org: '결제서비스팀', pm: '양현아',
+      startDate: '2025-11-01', endDate: '2026-06-30', progress: 65,
+      note: '페이포인트 연동 포함'
+    },
+    {
+      id: 2, name: 'QR 간편결제 UI 개선', status: 'in-progress',
+      org: '페이앱팀', pm: '이지수',
+      startDate: '2026-01-15', endDate: '2026-07-31', progress: 40,
+      note: ''
+    },
+    {
+      id: 3, name: '대출 신청 흐름 개편', status: 'completed',
+      org: '금융서비스팀', pm: '박민준',
+      startDate: '2025-05-01', endDate: '2025-12-31', progress: 100,
+      note: '12월 출시 완료'
+    },
+    {
+      id: 4, name: '보험 상품 온보딩 개선', status: 'completed',
+      org: '보험서비스팀', pm: '양현아',
+      startDate: '2025-03-01', endDate: '2025-09-30', progress: 100,
+      note: ''
+    },
+    {
+      id: 5, name: '이체 한도 정책 개편', status: 'planning',
+      org: '결제서비스팀', pm: '최수진',
+      startDate: '2026-04-01', endDate: '2026-09-30', progress: 10,
+      note: '법무 검토 진행 중'
+    },
+    {
+      id: 6, name: '신용점수 연동 서비스', status: 'planning',
+      org: '금융서비스팀', pm: '정태호',
+      startDate: '2026-05-01', endDate: '2026-12-31', progress: 5,
+      note: '파트너사 계약 협의 중'
+    },
+    {
+      id: 7, name: '해외 결제 다국통화 지원', status: 'in-progress',
+      org: '글로벌서비스팀', pm: '양현아',
+      startDate: '2026-02-01', endDate: '2026-08-31', progress: 30,
+      note: '일본/동남아 우선 적용'
+    },
+    {
+      id: 8, name: '카드 혜택 알림 시스템', status: 'paused',
+      org: '카드서비스팀', pm: '이지수',
+      startDate: '2025-10-01', endDate: '2026-03-31', progress: 20,
+      note: '리소스 부족으로 보류'
+    },
+  ];
+
+  // ── State ──
+  let projects = [];
+  let editingId = null;
+  let sortKey = 'startDate';
+  let sortAsc = false;
+  let showMyProjects = false;
+  let myPm = '';
+  let currentView = 'table';
+  let activeStatusFilter = 'all';
+
+  // ── Init ──
+  function init() {
+    const saved = localStorage.getItem('kp_dashboard_projects');
+    projects = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SAMPLE_PROJECTS));
+    myPm = localStorage.getItem('kp_dashboard_mypm') || '';
+    if (myPm) {
+      document.getElementById('myPmInput').style.display = 'none';
+      document.querySelector('.my-pm-save-btn').style.display = 'none';
+      document.getElementById('myPmDisplay').style.display = 'inline-flex';
+      document.getElementById('myPmBadge').textContent = '★ ' + myPm;
+    }
+    buildFilterOptions();
+    applyFilters();
+  }
+
+  // ── Save to localStorage ──
+  function saveData() {
+    localStorage.setItem('kp_dashboard_projects', JSON.stringify(projects));
+  }
+
+  // ── My PM ──
+  function saveMyPm() {
+    const val = document.getElementById('myPmInput').value.trim();
+    if (!val) return;
+    myPm = val;
+    localStorage.setItem('kp_dashboard_mypm', myPm);
+    document.getElementById('myPmInput').style.display = 'none';
+    document.querySelector('.my-pm-save-btn').style.display = 'none';
+    document.getElementById('myPmDisplay').style.display = 'inline-flex';
+    document.getElementById('myPmBadge').textContent = '★ ' + myPm;
+    applyFilters();
+  }
+  function editMyPm() {
+    document.getElementById('myPmInput').style.display = '';
+    document.querySelector('.my-pm-save-btn').style.display = '';
+    document.getElementById('myPmDisplay').style.display = 'none';
+    document.getElementById('myPmInput').value = myPm;
+  }
+
+  // ── Build filter dropdowns ──
+  function buildFilterOptions() {
+    const orgs = [...new Set(projects.map(p => p.org).filter(Boolean))].sort();
+    const pms = [...new Set(projects.map(p => p.pm).filter(Boolean))].sort();
+    const years = [...new Set(projects.map(p => p.startDate ? p.startDate.slice(0,4) : null).filter(Boolean))].sort().reverse();
+
+    const orgSel = document.getElementById('filterOrg');
+    const pmSel = document.getElementById('filterPm');
+    const yearSel = document.getElementById('filterYear');
+
+    const orgVal = orgSel.value;
+    const pmVal = pmSel.value;
+    const yearVal = yearSel.value;
+
+    orgSel.innerHTML = '<option value="all">전체 조직</option>' + orgs.map(o => `<option value="${o}">${o}</option>`).join('');
+    pmSel.innerHTML = '<option value="all">전체 PM</option>' + pms.map(p => `<option value="${p}">${p}</option>`).join('');
+    yearSel.innerHTML = '<option value="all">전체</option>' + years.map(y => `<option value="${y}">${y}년</option>`).join('');
+
+    if (orgVal) orgSel.value = orgVal;
+    if (pmVal) pmSel.value = pmVal;
+    if (yearVal) yearSel.value = yearVal;
+  }
+
+  // ── Filter by summary card ──
+  function filterByStatus(status) {
+    activeStatusFilter = status;
+    document.getElementById('filterStatus').value = status;
+    document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('card-' + status).classList.add('active-filter');
+    applyFilters();
+  }
+
+  // ── Toggle my projects ──
+  function toggleMyProjects() {
+    showMyProjects = !showMyProjects;
+    document.getElementById('myProjectsBtn').classList.toggle('active', showMyProjects);
+    applyFilters();
+  }
+
+  // ── Apply all filters ──
+  function applyFilters() {
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    const org = document.getElementById('filterOrg').value;
+    const pm = document.getElementById('filterPm').value;
+    const year = document.getElementById('filterYear').value;
+
+    activeStatusFilter = status;
+    document.querySelectorAll('.summary-card').forEach(c => c.classList.remove('active-filter'));
+    document.getElementById('card-' + status).classList.add('active-filter');
+
+    let filtered = projects.filter(p => {
+      if (showMyProjects && myPm && p.pm !== myPm) return false;
+      if (search && !p.name.toLowerCase().includes(search) && !p.org.toLowerCase().includes(search) && !p.pm.toLowerCase().includes(search)) return false;
+      if (status !== 'all' && p.status !== status) return false;
+      if (org !== 'all' && p.org !== org) return false;
+      if (pm !== 'all' && p.pm !== pm) return false;
+      if (year !== 'all' && p.startDate && !p.startDate.startsWith(year)) return false;
+      return true;
+    });
+
+    // Sort
+    filtered.sort((a, b) => {
+      let av = a[sortKey] || '';
+      let bv = b[sortKey] || '';
+      if (av < bv) return sortAsc ? -1 : 1;
+      if (av > bv) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    // Put my projects on top
+    if (myPm) {
+      filtered.sort((a, b) => {
+        const am = a.pm === myPm ? 0 : 1;
+        const bm = b.pm === myPm ? 0 : 1;
+        return am - bm;
+      });
+    }
+
+    updateStats();
+    renderTable(filtered);
+    renderCards(filtered);
+
+    document.getElementById('resultsCount').textContent = filtered.length;
+
+    // Active filter label
+    const labels = [];
+    if (status !== 'all') labels.push(statusLabel(status));
+    if (org !== 'all') labels.push(org);
+    if (pm !== 'all') labels.push(pm);
+    if (year !== 'all') labels.push(year + '년');
+    if (showMyProjects && myPm) labels.push('내 프로젝트(' + myPm + ')');
+    if (search) labels.push('"' + search + '"');
+    document.getElementById('activeFilterLabel').textContent = labels.length ? '필터: ' + labels.join(', ') : '';
+  }
+
+  // ── Update Stats ──
+  function updateStats() {
+    const counts = { all: projects.length, 'in-progress': 0, planning: 0, completed: 0, paused: 0 };
+    projects.forEach(p => { if (counts[p.status] !== undefined) counts[p.status]++; });
+    document.getElementById('stat-all').textContent = counts.all;
+    document.getElementById('stat-in-progress').textContent = counts['in-progress'];
+    document.getElementById('stat-planning').textContent = counts.planning;
+    document.getElementById('stat-completed').textContent = counts.completed;
+    document.getElementById('stat-paused').textContent = counts.paused;
+  }
+
+  // ── Render Table ──
+  function renderTable(filtered) {
+    const tbody = document.getElementById('projectTableBody');
+    if (filtered.length === 0) {
+      tbody.innerHTML = '';
+      document.getElementById('tableNoResults').style.display = 'block';
+      return;
+    }
+    document.getElementById('tableNoResults').style.display = 'none';
+    tbody.innerHTML = filtered.map(p => {
+      const isMe = myPm && p.pm === myPm;
+      const prog = p.progress ?? 0;
+      const overdue = p.endDate && p.status !== 'completed' && p.endDate < today();
+      return `<tr class="${isMe ? 'my-project' : ''}" onclick="openProjectProcess(${p.id})" style="cursor:pointer;">
+        <td>
+          <div class="project-name-cell">
+            ${isMe ? '<span class="my-star">★</span>' : ''}
+            <span class="project-name-text">${escape(p.name)}</span>
+          </div>
+        </td>
+        <td><span class="status-badge ${p.status}">${statusLabel(p.status)}</span></td>
+        <td><span class="org-tag">${escape(p.org)}</span></td>
+        <td><span class="pm-tag ${isMe ? 'mine' : ''}">${escape(p.pm)}</span></td>
+        <td><span class="date-cell">${fmtDate(p.startDate)}</span></td>
+        <td><span class="date-cell ${overdue ? 'overdue' : ''}">${fmtDate(p.endDate)}${overdue ? ' ⚠' : ''}</span></td>
+        <td>
+          <div class="progress-mini">
+            <div class="progress-mini-bar"><div class="progress-mini-fill ${p.status}" style="width:${prog}%"></div></div>
+            <span class="progress-pct">${prog}%</span>
+          </div>
+        </td>
+        <td style="font-size:12px;color:var(--text-muted);">${escape(p.note || '')}</td>
+        <td onclick="event.stopPropagation();" style="text-align:center;width:52px;">
+          <button onclick="openEditModal(${p.id})" title="수정" style="background:none;border:1px solid var(--border);border-radius:7px;padding:4px 8px;font-size:13px;color:var(--text-muted);cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">✏️</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Render Cards ──
+  function renderCards(filtered) {
+    const grid = document.getElementById('cardGrid');
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      document.getElementById('cardNoResults').style.display = 'block';
+      return;
+    }
+    document.getElementById('cardNoResults').style.display = 'none';
+    const overdue = p => p.endDate && p.status !== 'completed' && p.endDate < today();
+    grid.innerHTML = filtered.map(p => {
+      const isMe = myPm && p.pm === myPm;
+      const prog = p.progress ?? 0;
+      return `<div class="project-card ${isMe ? 'my-project' : ''}" onclick="openProjectProcess(${p.id})">
+        <div class="card-top">
+          <div class="card-name">${isMe ? '★ ' : ''}${escape(p.name)}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span class="status-badge ${p.status}">${statusLabel(p.status)}</span>
+            <button onclick="event.stopPropagation();openEditModal(${p.id})" title="수정" style="background:none;border:1px solid var(--border);border-radius:7px;padding:3px 8px;font-size:12px;color:var(--text-muted);cursor:pointer;">✏️</button>
+          </div>
+        </div>
+        <div class="card-meta">
+          <span class="org-tag">${escape(p.org)}</span>
+          <span class="meta-pm" style="font-size:12px;color:var(--text-muted);">PM: <strong>${escape(p.pm)}</strong></span>
+        </div>
+        <div class="card-dates">
+          <div class="card-date-item">
+            <span class="card-date-label">시작일</span>
+            <span class="card-date-val">${fmtDate(p.startDate) || '—'}</span>
+          </div>
+          <div class="card-date-item">
+            <span class="card-date-label">완료 예정</span>
+            <span class="card-date-val" style="${overdue(p) ? 'color:var(--required)' : ''}">${fmtDate(p.endDate) || '—'}${overdue(p) ? ' ⚠' : ''}</span>
+          </div>
+        </div>
+        ${p.note ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${escape(p.note)}</div>` : ''}
+        <div class="card-progress">
+          <div class="card-progress-row"><span>진행률</span><span>${prog}%</span></div>
+          <div class="card-progress-bar"><div class="card-progress-fill ${p.status}" style="width:${prog}%"></div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Sort ──
+  function sortTable(key) {
+    if (sortKey === key) { sortAsc = !sortAsc; }
+    else { sortKey = key; sortAsc = true; }
+    document.querySelectorAll('.sort-icon').forEach(el => el.textContent = '↕');
+    document.getElementById('sort-' + key).textContent = sortAsc ? '↑' : '↓';
+    document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
+    applyFilters();
+  }
+
+  // ── View toggle ──
+  function setView(v) {
+    currentView = v;
+    document.getElementById('tableView').style.display = v === 'table' ? 'block' : 'none';
+    document.getElementById('cardView').style.display = v === 'card' ? 'block' : 'none';
+    document.getElementById('btnTableView').classList.toggle('active', v === 'table');
+    document.getElementById('btnCardView').classList.toggle('active', v === 'card');
+  }
+
+  // ── Reset filters ──
+  function resetFilters() {
+    document.getElementById('filterSearch').value = '';
+    document.getElementById('filterStatus').value = 'all';
+    document.getElementById('filterOrg').value = 'all';
+    document.getElementById('filterPm').value = 'all';
+    document.getElementById('filterYear').value = 'all';
+    showMyProjects = false;
+    document.getElementById('myProjectsBtn').classList.remove('active');
+    activeStatusFilter = 'all';
+    applyFilters();
+  }
+
+  // ── Modal ──
+  function openProjectProcess(id) {
+    window.location.href = 'index.html?pid=' + id;
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = '프로젝트 추가';
+    document.getElementById('btnDelete').style.display = 'none';
+    document.getElementById('formName').value = '';
+    document.getElementById('formStatus').value = 'in-progress';
+    document.getElementById('formOrg').value = '';
+    document.getElementById('formPm').value = myPm || '';
+    document.getElementById('formStartDate').value = today();
+    document.getElementById('formEndDate').value = '';
+    document.getElementById('formProgress').value = '0';
+    document.getElementById('formNote').value = '';
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('formName').focus();
+  }
+
+  function openEditModal(id) {
+    const p = projects.find(x => x.id === id);
+    if (!p) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = '프로젝트 수정';
+    document.getElementById('btnDelete').style.display = '';
+    document.getElementById('formName').value = p.name;
+    document.getElementById('formStatus').value = p.status;
+    document.getElementById('formOrg').value = p.org;
+    document.getElementById('formPm').value = p.pm;
+    document.getElementById('formStartDate').value = p.startDate || '';
+    document.getElementById('formEndDate').value = p.endDate || '';
+    document.getElementById('formProgress').value = p.progress ?? 0;
+    document.getElementById('formNote').value = p.note || '';
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function closeModalOnOverlay(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function saveProject() {
+    const name = document.getElementById('formName').value.trim();
+    const org = document.getElementById('formOrg').value.trim();
+    const pm = document.getElementById('formPm').value.trim();
+    if (!name || !org || !pm) { alert('프로젝트명, 조직명, 메인 PM은 필수 입력입니다.'); return; }
+    const data = {
+      name, org, pm,
+      status: document.getElementById('formStatus').value,
+      startDate: document.getElementById('formStartDate').value || null,
+      endDate: document.getElementById('formEndDate').value || null,
+      progress: parseInt(document.getElementById('formProgress').value) || 0,
+      note: document.getElementById('formNote').value.trim(),
+    };
+    if (editingId !== null) {
+      const idx = projects.findIndex(x => x.id === editingId);
+      if (idx !== -1) projects[idx] = { ...projects[idx], ...data };
+    } else {
+      const maxId = projects.length ? Math.max(...projects.map(p => p.id)) : 0;
+      projects.push({ id: maxId + 1, ...data });
+    }
+    saveData();
+    buildFilterOptions();
+    applyFilters();
+    closeModal();
+  }
+
+  function deleteProject() {
+    if (!confirm('이 프로젝트를 삭제하시겠습니까?')) return;
+    projects = projects.filter(p => p.id !== editingId);
+    saveData();
+    buildFilterOptions();
+    applyFilters();
+    closeModal();
+  }
+
+  // ── Helpers ──
+  function statusLabel(s) {
+    return { 'in-progress': '진행 중', planning: '기획 중', completed: '완료', paused: '보류' }[s] || s;
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    return d.replace(/-/g, '.');
+  }
+  function today() {
+    return new Date().toISOString().slice(0, 10);
+  }
+  function escape(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Keyboard close modal
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  init();
+</script>
+</body>
+</html>

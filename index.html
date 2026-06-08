@@ -694,6 +694,78 @@
       aside { display: none; }
       .summary-grid { grid-template-columns: repeat(2,1fr); }
     }
+
+    /* ── Back to Dashboard ── */
+    .back-to-dash {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--kakao-brown);
+      background: rgba(60,30,30,0.12);
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .back-to-dash:hover { background: rgba(60,30,30,0.2); }
+    .back-to-dash.visible { display: flex; }
+
+    /* ── Project Info Banner ── */
+    .proj-banner {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 12px;
+      padding: 18px 22px;
+      margin-bottom: 24px;
+    }
+    .proj-banner.visible { display: block; }
+    .proj-banner-name {
+      font-size: 19px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .proj-banner-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 13px;
+    }
+    .proj-banner-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-muted);
+    }
+    .proj-banner-item strong { color: var(--text); font-weight: 600; }
+    .proj-banner-progress {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .proj-banner-bar {
+      width: 180px;
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .proj-banner-fill { height: 100%; background: var(--blue); border-radius: 99px; }
+    .proj-banner-fill.completed { background: var(--success); }
   </style>
 </head>
 <body>
@@ -704,6 +776,7 @@
       카카오페이 PM 프로세스 가이드
       <span class="logo-badge">INTERNAL</span>
     </div>
+    <a href="dashboard.html" class="back-to-dash" id="backToDash">← 프로젝트 목록</a>
     <div class="search-wrap">
       <input type="text" id="searchInput" placeholder="업무 검색 (예: 약관, QA, 보안...)" />
     </div>
@@ -780,6 +853,17 @@
     <div class="tab-content active" id="tab-process">
       <div class="page-title">서비스 출시 프로세스</div>
       <div class="page-subtitle">신규 출시부터 출시 후 운영까지 PM이 수행해야 하는 전체 업무 절차를 안내합니다.</div>
+
+      <!-- Project Info Banner (URL param으로 진입 시 표시) -->
+      <div class="proj-banner" id="projBanner">
+        <div class="proj-banner-name" id="projBannerName"></div>
+        <div class="proj-banner-meta" id="projBannerMeta"></div>
+        <div class="proj-banner-progress" id="projBannerProgress" style="display:none;">
+          <span>진행률</span>
+          <div class="proj-banner-bar"><div class="proj-banner-fill" id="projBannerFill"></div></div>
+          <span id="projBannerPct" style="font-weight:600;"></span>
+        </div>
+      </div>
 
       <div class="summary-grid">
         <div class="summary-card">
@@ -2203,11 +2287,79 @@ function resetPhaseProgress() {
   renderPhaseProgress();
 }
 
+// ─── URL PARAM: 대시보드에서 진입 시 ────────────────────────────
+function initFromUrl() {
+  const pid = new URLSearchParams(window.location.search).get('pid');
+  if (!pid) return;
+
+  // 대시보드 프로젝트 데이터 읽기
+  let dashProjs = [];
+  try { const s = localStorage.getItem('kp_dashboard_projects'); if (s) dashProjs = JSON.parse(s); } catch(e) {}
+  const dp = dashProjs.find(p => String(p.id) === String(pid));
+  if (!dp) return;
+
+  // 상단 뒤로가기 버튼 표시
+  document.getElementById('backToDash').classList.add('visible');
+
+  // pmProjects에서 대시보드 프로젝트와 연결된 항목 찾기 또는 생성
+  let proc = projects.find(p => String(p.dashboardId) === String(pid));
+  if (!proc) {
+    proc = { id: genId(), name: dp.name, dashboardId: String(pid), phaseStates: {} };
+    projects.push(proc);
+  } else {
+    proc.name = dp.name;
+  }
+  currentProjectId = proc.id;
+  saveProjects();
+  renderProjectBar();
+  renderPhaseProgress();
+
+  // 프로젝트 정보 배너 표시
+  const statusMap = { 'in-progress': '진행 중', planning: '기획 중', completed: '완료', paused: '보류' };
+  const statusBg  = { 'in-progress': '#EBF3FF', planning: '#FFF8E1', completed: '#E8F5E9', paused: '#F5F5F5' };
+  const statusClr = { 'in-progress': 'var(--blue)', planning: '#B06000', completed: 'var(--success)', paused: '#888' };
+  const st = dp.status || 'in-progress';
+
+  document.getElementById('projBannerName').innerHTML =
+    dp.name + ' <span style="font-size:12px;font-weight:700;padding:3px 12px;border-radius:99px;background:' +
+    (statusBg[st]||'#EEE') + ';color:' + (statusClr[st]||'#666') + ';">' + (statusMap[st]||st) + '</span>';
+
+  const metas = [];
+  if (dp.org)  metas.push('<span class="proj-banner-item">🏢 조직&nbsp;<strong>' + dp.org + '</strong></span>');
+  if (dp.pm)   metas.push('<span class="proj-banner-item">👤 메인 PM&nbsp;<strong>' + dp.pm + '</strong></span>');
+  if (dp.startDate) metas.push('<span class="proj-banner-item">📅 시작&nbsp;<strong>' + dp.startDate.replace(/-/g,'.') + '</strong></span>');
+  if (dp.endDate)   metas.push('<span class="proj-banner-item">🏁 완료 예정&nbsp;<strong>' + dp.endDate.replace(/-/g,'.') + '</strong></span>');
+  if (dp.note) metas.push('<span class="proj-banner-item">📝&nbsp;' + dp.note + '</span>');
+  document.getElementById('projBannerMeta').innerHTML = metas.join('');
+
+  if (dp.progress !== undefined) {
+    const pEl = document.getElementById('projBannerProgress');
+    pEl.style.display = 'flex';
+    const fill = document.getElementById('projBannerFill');
+    fill.style.width = dp.progress + '%';
+    fill.className = 'proj-banner-fill' + (st === 'completed' ? ' completed' : '');
+    document.getElementById('projBannerPct').textContent = dp.progress + '%';
+  }
+
+  document.getElementById('projBanner').classList.add('visible');
+
+  // 현재 단계로 자동 스크롤
+  setTimeout(() => {
+    const states = proc.phaseStates || {};
+    const curPhase = phases.find(p => states[p.id] !== 'done');
+    if (curPhase) {
+      const el = document.getElementById(curPhase.id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 450);
+}
+
 // ─── INIT ────────────────────────────────────────────────────────
 renderProcess();
 renderChecklist();
 initPhaseProgress();
 loadLinks();
+initFromUrl();
 </script>
 </body>
 </html>
